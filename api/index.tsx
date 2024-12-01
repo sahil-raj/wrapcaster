@@ -7,11 +7,6 @@ import axios from "axios";
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 
-// Uncomment to use Edge Runtime.
-// export const config = {
-//   runtime: 'edge',
-// }
-
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(`${supabaseUrl}`, `${supabaseKey}`);
@@ -157,8 +152,14 @@ app.frame("/getWrapped", async (c) => {
   });
 });
 
-app.hono.get("/test", (c) => {
-  return c.json("ribbit");
+app.hono.post("/dashboardData", async (c) => {
+  const { data, error } = await supabase.from("wrapData").select("*");
+  if (!error) {
+    if (data.length > 0) {
+      return c.json(data);
+    }
+  }
+  return c.json("{}");
 });
 
 // @ts-ignore
