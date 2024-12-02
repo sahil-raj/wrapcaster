@@ -103,14 +103,41 @@ app.frame("/getWrapped", async (c) => {
             { headers }
           );
 
-          /*description, following, followers, wallets*/
-          console.log(
-            "on the job",
-            await casts.data.result.casts[1].text,
-            res.data.result.user.followingCount,
-            res.data.result.user.followerCount,
-            res.data.result.user.allConnectedAddresses
+          const sendObj = {};
+          //@ts-ignore
+          casts.data.result.casts.map((cast, index) => {
+            //@ts-ignore
+            sendObj[index] = cast.text;
+          });
+
+          const mlThing = await axios.post(
+            `https://mg7n1r5c-5000.inc1.devtunnels.ms/analyze`,
+            sendObj
           );
+
+          let writeData = {
+            fid: c.frameData?.fid,
+            wrap_data: {
+              company_prediction: mlThing.data,
+              followings: res.data.result.user.followingCount,
+              followers: res.data.result.user.followerCount,
+              wallets: res.data.result.user.allConnectedAddresses,
+            },
+          };
+
+          try {
+            const { data: result, error } = await supabase
+              .from("wrapData")
+              .insert([writeData]);
+
+            if (error) {
+              console.error("Error inserting data:", error);
+            } else {
+              console.log("Data inserted successfully:", result);
+            }
+          } catch (err) {
+            console.error("Unexpected error:", err);
+          }
         }
       }
     })();
@@ -161,6 +188,10 @@ app.hono.post("/dashboardData", async (c) => {
   }
   return c.json("{}");
 });
+
+// app.hono.post("/mlServerData", async (c) => {
+//   const {data, error} =
+// });
 
 // @ts-ignore
 const isEdgeFunction = typeof EdgeFunction !== "undefined";
